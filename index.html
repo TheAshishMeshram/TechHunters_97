@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudyFlow AI — Smart Study Planner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ─── Sidebar ─── -->
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-icon">⚡</div>
+    <span class="brand-name">StudyFlow<em>AI</em></span>
+  </div>
+  <nav class="nav">
+    <a class="nav-item active" data-tab="dashboard">
+      <span class="nav-icon">◈</span> Dashboard
+    </a>
+    <a class="nav-item" data-tab="schedule">
+      <span class="nav-icon">◉</span> AI Schedule
+    </a>
+    <a class="nav-item" data-tab="tasks">
+      <span class="nav-icon">◎</span> Tasks
+    </a>
+    <a class="nav-item" data-tab="timer">
+      <span class="nav-icon">◷</span> Study Timer
+    </a>
+    <a class="nav-item" data-tab="analytics">
+      <span class="nav-icon">◈</span> Analytics
+    </a>
+    <a class="nav-item" data-tab="reminders">
+      <span class="nav-icon">◍</span> Reminders
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="streak-badge">
+      <span class="streak-fire">🔥</span>
+      <span class="streak-count" id="sidebarStreak">0</span>
+      <span class="streak-label">day streak</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ─── Main Content ─── -->
+<main class="main">
+
+  <!-- Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="clock" id="liveClock"></div>
+      <div class="notif-btn" onclick="switchTab('reminders')">
+        🔔 <span class="notif-dot" id="notifDot"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════ DASHBOARD ══════════════ -->
+  <section class="tab-content active" id="tab-dashboard">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h1 id="greetingText">Good morning, Scholar! 👋</h1>
+        <p>Your AI-powered study companion is ready. Let's crush today's goals.</p>
+      </div>
+      <div class="welcome-art">📚</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card accent-teal">
+        <div class="stat-label">Total Study Time</div>
+        <div class="stat-value" id="statStudyTime">0h 0m</div>
+        <div class="stat-sub">all time</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-label">Tasks Completed</div>
+        <div class="stat-value" id="statTasksDone">0</div>
+        <div class="stat-sub">this week</div>
+      </div>
+      <div class="stat-card accent-rose">
+        <div class="stat-label">Current Streak</div>
+        <div class="stat-value" id="statStreak">🔥 0</div>
+        <div class="stat-sub">consecutive days</div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-label">Completion Rate</div>
+        <div class="stat-value" id="statCompletion">0%</div>
+        <div class="stat-sub">task success</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card" id="todayCard">
+        <div class="card-header">
+          <h3>Today's Plan</h3>
+          <span class="badge" id="todayDate"></span>
+        </div>
+        <div id="todayPlan" class="today-sessions">
+          <div class="empty-state">No schedule yet.<br><a class="link-btn" onclick="switchTab('schedule')">Generate one →</a></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Upcoming Deadlines</h3>
+        </div>
+        <div id="upcomingDeadlines" class="deadline-list">
+          <div class="empty-state">No tasks yet.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ AI SCHEDULE ══════════════ -->
+  <section class="tab-content" id="tab-schedule">
+    <div class="section-header">
+      <h2>AI Schedule Generator</h2>
+      <p>Tell the AI your subjects and let it build your optimal study plan.</p>
+    </div>
+
+    <div class="card schedule-form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Study Hours / Day</label>
+          <input type="number" id="hoursPerDay" value="4" min="1" max="12" class="input"/>
+        </div>
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" id="startDate" class="input"/>
+        </div>
+        <div class="form-group">
+          <label>Exam / Goal Date</label>
+          <input type="date" id="examDate" class="input"/>
+        </div>
+        <div class="form-group">
+          <label>Priority Mode</label>
+          <select id="priorityMode" class="input">
+            <option value="balanced">Balanced</option>
+            <option value="deadline">Deadline-Driven</option>
+            <option value="difficulty">Difficulty-First</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="subjects-section">
+        <div class="subjects-header">
+          <label>Subjects</label>
+          <button class="btn-sm" onclick="addSubjectRow()">+ Add Subject</button>
+        </div>
+        <div id="subjectRows">
+          <div class="subject-row">
+            <input placeholder="Subject name" class="input subj-name" value="Mathematics"/>
+            <select class="input subj-diff">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <input type="number" placeholder="hrs/day" class="input subj-hours" value="1.5" min="0.5" step="0.5"/>
+            <input placeholder="Topics (comma separated)" class="input subj-topics" value="Algebra, Calculus, Statistics"/>
+            <button class="btn-icon" onclick="removeRow(this)">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="generateSchedule()">
+        ⚡ Generate AI Schedule
+      </button>
+    </div>
+
+    <div id="scheduleOutput" class="schedule-output" style="display:none">
+      <div class="card-header" style="margin-bottom:1rem">
+        <h3>Your Personalized Schedule</h3>
+        <span class="badge success" id="scheduleDays"></span>
+      </div>
+      <div id="scheduleGrid" class="schedule-grid"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ TASKS ══════════════ -->
+  <section class="tab-content" id="tab-tasks">
+    <div class="section-header">
+      <h2>Task & Deadline Manager</h2>
+    </div>
+
+    <div class="card task-form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Task Title</label>
+          <input id="taskTitle" class="input" placeholder="e.g. Complete Physics Assignment"/>
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <input id="taskSubject" class="input" placeholder="e.g. Physics"/>
+        </div>
+        <div class="form-group">
+          <label>Deadline</label>
+          <input type="date" id="taskDeadline" class="input"/>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="taskPriority" class="input">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <textarea id="taskNotes" class="input textarea" placeholder="Notes or description (optional)"></textarea>
+      <button class="btn-primary" onclick="addTask()">+ Add Task</button>
+    </div>
+
+    <div class="task-filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="pending">Pending</button>
+      <button class="filter-btn" data-filter="completed">Completed</button>
+      <button class="filter-btn" data-filter="high">High Priority</button>
+    </div>
+
+    <div id="taskList" class="task-list"></div>
+  </section>
+
+  <!-- ══════════════ TIMER ══════════════ -->
+  <section class="tab-content" id="tab-timer">
+    <div class="section-header">
+      <h2>Study Timer</h2>
+      <p>Pomodoro & custom sessions with automatic tracking.</p>
+    </div>
+
+    <div class="timer-layout">
+      <div class="card timer-card">
+        <div class="timer-mode-btns">
+          <button class="mode-btn active" data-mins="25" onclick="setMode(this,25,'🍅 Pomodoro')">🍅 Pomodoro</button>
+          <button class="mode-btn" data-mins="15" onclick="setMode(this,15,'☕ Short Break')">☕ Short Break</button>
+          <button class="mode-btn" data-mins="30" onclick="setMode(this,30,'🎮 Long Break')">🎮 Long Break</button>
+          <button class="mode-btn" data-mins="60" onclick="setMode(this,60,'📖 Deep Work')">📖 Deep Work</button>
+        </div>
+
+        <div class="timer-display">
+          <svg class="timer-ring" viewBox="0 0 220 220">
+            <circle class="ring-bg" cx="110" cy="110" r="100"/>
+            <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="100"
+              stroke-dasharray="628" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text">
+            <div class="timer-label" id="timerLabel">🍅 Pomodoro</div>
+            <div class="timer-digits" id="timerDigits">25:00</div>
+            <div class="timer-sub" id="timerStatus">Ready to focus</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="btn-circle" onclick="startTimer()">▶</button>
+          <button class="btn-circle secondary" onclick="pauseTimer()">⏸</button>
+          <button class="btn-circle secondary" onclick="resetTimer()">↺</button>
+        </div>
+
+        <div class="session-form">
+          <input id="sessionSubject" class="input" placeholder="Subject for this session"/>
+        </div>
+      </div>
+
+      <div class="card sessions-log-card">
+        <div class="card-header">
+          <h3>Session Log</h3>
+        </div>
+        <div id="sessionsLog" class="sessions-log"></div>
+      </div>
+    </div>
+
+    <!-- Notification popup -->
+    <div class="notif-popup" id="notifPopup" style="display:none">
+      <div class="notif-icon" id="notifIcon">🎉</div>
+      <div class="notif-msg" id="notifMsg">Time's up!</div>
+      <button class="btn-sm" onclick="dismissNotif()">Dismiss</button>
+    </div>
+  </section>
+
+  <!-- ══════════════ ANALYTICS ══════════════ -->
+  <section class="tab-content" id="tab-analytics">
+    <div class="section-header">
+      <h2>Performance Analytics</h2>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card accent-teal">
+        <div class="stat-label">Avg Session Length</div>
+        <div class="stat-value" id="avgSession">0m</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value" id="weekHours">0h</div>
+      </div>
+      <div class="stat-card accent-rose">
+        <div class="stat-label">Task Rate</div>
+        <div class="stat-value" id="taskRate">0%</div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-label">Best Subject</div>
+        <div class="stat-value" id="bestSubject" style="font-size:1rem">—</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card chart-card">
+        <div class="card-header"><h3>Weekly Study Hours</h3></div>
+        <canvas id="weeklyChart" height="200"></canvas>
+      </div>
+      <div class="card chart-card">
+        <div class="card-header"><h3>Subject Breakdown</h3></div>
+        <canvas id="subjectChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Task Completion Progress</h3></div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="taskProgressBar" style="width:0%"></div>
+        </div>
+        <span id="taskProgressLabel">0 / 0 tasks</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ REMINDERS ══════════════ -->
+  <section class="tab-content" id="tab-reminders">
+    <div class="section-header">
+      <h2>Smart Reminders</h2>
+      <p>AI-powered nudges based on your schedule and deadlines.</p>
+    </div>
+    <div id="remindersList" class="reminders-list"></div>
+
+    <div class="card reminder-settings-card">
+      <div class="card-header"><h3>Notification Settings</h3></div>
+      <div class="notif-settings">
+        <label class="toggle-row">
+          <span>Study Reminders</span>
+          <input type="checkbox" class="toggle" checked/>
+        </label>
+        <label class="toggle-row">
+          <span>Break Alerts</span>
+          <input type="checkbox" class="toggle" checked/>
+        </label>
+        <label class="toggle-row">
+          <span>Deadline Warnings</span>
+          <input type="checkbox" class="toggle" checked/>
+        </label>
+        <label class="toggle-row">
+          <span>Motivational Quotes</span>
+          <input type="checkbox" class="toggle"/>
+        </label>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
